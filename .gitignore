@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.claude/
+
+# Large regenerated datasets (~2.5GB total) - regenerate via: python scripts/run_all.py full
+output/*.parquet
