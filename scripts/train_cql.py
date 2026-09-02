@@ -21,7 +21,7 @@ from drl.features import AREAS, NETWORK_TYPES, build_actions, build_state
 from drl.reward import RewardWeights, compute_reward, fit_normalization
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "Hybrid_Network_TN_NTN_Final.csv"
+CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
 PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
 
 SEED = 0

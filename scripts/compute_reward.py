@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from drl.reward import RewardWeights, compute_reward, fit_normalization
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "Hybrid_Network_TN_NTN_Final.csv"
+CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
 PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
 
 

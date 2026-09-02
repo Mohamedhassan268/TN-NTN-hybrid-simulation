@@ -27,7 +27,7 @@ def run_sample(sample_ues=40):
     report_lines = ["# Validation Report\n", f"Sample size: {sample_ues} UEs per technology, 600 steps @ 10ms.\n"]
 
     for f in FILES:
-        clean_path = os.path.join(ROOT, f)
+        clean_path = os.path.join(ROOT, "data", "raw", f)
         clean_df = pd.read_csv(clean_path)
         noisy_df = generate_noisy_dataframe(clean_df, f, seed=7, max_ues=sample_ues, n_steps=600, step_s=0.01)
         tech_label = f.replace(".csv", "")
@@ -78,7 +78,7 @@ def run_full():
     out_dir = os.path.join(ROOT, "output")
     os.makedirs(out_dir, exist_ok=True)
     for f in FILES:
-        clean_path = os.path.join(ROOT, f)
+        clean_path = os.path.join(ROOT, "data", "raw", f)
         clean_df = pd.read_csv(clean_path)
         print(f"Generating full trace for {f} ({len(clean_df)} UEs x 600 steps)...")
         noisy_df = generate_noisy_dataframe(clean_df, f, seed=42)
