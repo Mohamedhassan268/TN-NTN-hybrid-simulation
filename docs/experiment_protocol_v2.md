@@ -10,6 +10,8 @@ Every PPO, DQN, and CQL checkpoint carries the SHA-256 hash of `experiments/revi
 
 ## Campaign order
 
+Status as of 2026-09-12: steps 1 and 2 pass. External values were generated from the commits pinned in `standards/external_tools.json`; the next gate is step 3.
+
 1. Run the deterministic schema, environment, oracle, statistics, and internal conformance tests.
 2. Produce and archive frozen outputs from OpenNTN and LLSim5G; run `scripts/run_physical_conformance.py --external ...`. Do not make an NTN or 3GPP realism claim without this gate.
 3. Run `scripts/develop_ppo_critic.py`, review `selected_configuration.json`, and copy the selected capacity into the core manifest before core PPO training.

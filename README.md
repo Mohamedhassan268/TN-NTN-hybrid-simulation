@@ -8,7 +8,7 @@ The v2 experiment protocol is in [docs/experiment_protocol_v2.md](docs/experimen
 
 ```powershell
 python -m pytest tests -q
-python scripts/run_physical_conformance.py
+python scripts/run_physical_conformance.py --external standards/external_reference_outputs.csv
 python scripts/develop_ppo_critic.py
 python scripts/train_revision_v2.py
 python scripts/train_cql_revision_v2.py
@@ -21,7 +21,7 @@ python scripts/make_pareto_revision_v2.py
 python scripts/release_gate_revision_v2.py
 ```
 
-The release gate intentionally fails until the full 10-seed core campaign, five-seed sweeps, external OpenNTN/LLSim5G cross-check output, frozen results, clean-clone verification, and final DOCX render have been completed.
+The pinned external OpenNTN/LLSim5G cross-check passed on 2026-09-12. The release gate intentionally continues to fail until the PPO critic selection, full 10-seed core campaign, five-seed sweeps, frozen results, clean-clone verification, and final DOCX render have been completed.
 
 A simulation-and-learning stack for hybrid **Terrestrial (TN)** and **Non-Terrestrial (NTN)**
 networks — 5G NR, WiFi 6, HAPS, LEO satellite, and UAV links. It pairs a physics/ITU-R-grounded

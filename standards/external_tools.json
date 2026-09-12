@@ -1,0 +1,16 @@
+{
+  "LLSim5G": {
+    "repository": "https://github.com/EFontesP90/LLSim5G.git",
+    "commit": "87ec64e0a9ed2c72384d046eabfa05071870f041",
+    "version": "1.0.0"
+  },
+  "OpenNTN": {
+    "repository": "https://github.com/ant-uni-bremen/OpenNTN.git",
+    "commit": "f294df0480f31a4148e8fe4af9b17dd4abcdb869",
+    "version": "0.1.0",
+    "dependencies": {
+      "python": "3.11",
+      "sionna": "1.2.2"
+    }
+  }
+}
