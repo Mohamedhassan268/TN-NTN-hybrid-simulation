@@ -1,0 +1,5 @@
+id,external_db,source,source_version,command_or_notebook,notes
+38901_uma_los_100m_3p5ghz,,LLSim5G,,,Use frozen output from its TR 38.901 UMa configuration.
+38901_uma_nlos_500m_3p5ghz,,LLSim5G,,,Use frozen output from its TR 38.901 UMa configuration.
+36777_uma_av_los_1km_2ghz,,LLSim5G,,,Use frozen output from its aerial-link configuration.
+38811_basic_600km_12ghz_plus_clutter,,OpenNTN,,,Use a declared basic path-loss-compatible configuration and disclose mapping deviation.

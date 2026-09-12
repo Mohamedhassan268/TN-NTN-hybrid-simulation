@@ -1,0 +1,38 @@
+{
+  "dataset_version": "2.0.0",
+  "primary_key": [
+    "trajectory_id",
+    "step_index",
+    "band",
+    "network_type"
+  ],
+  "observation_order": {
+    "offline": [
+      "area_onehot[6]",
+      "network[5].[available,rssi_norm,sinr_norm]"
+    ],
+    "online": [
+      "area_onehot[6]",
+      "network[5].[available,rssi_norm,sinr_norm]",
+      "previous_network_onehot[5]"
+    ]
+  },
+  "units": {
+    "time_s": "s",
+    "decision_interval_s": "s",
+    "distance_km": "km",
+    "elevation_deg": "degree",
+    "altitude_m": "m",
+    "speed_mps": "m/s",
+    "doppler_hz": "Hz",
+    "rain_rate_mm_h": "mm/h",
+    "rssi_dbm": "dBm",
+    "snr_db": "dB",
+    "sinr_db": "dB",
+    "throughput_mbps": "Mbit/s",
+    "propagation_delay_ms": "ms",
+    "latency_ms": "ms",
+    "packet_loss_pct": "%",
+    "spectral_efficiency_bps_hz": "bit/s/Hz"
+  }
+}

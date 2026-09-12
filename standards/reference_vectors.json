@@ -1,0 +1,34 @@
+[
+  {
+    "id": "38901_uma_los_100m_3p5ghz",
+    "implementation": "uma_path_loss_db",
+    "arguments": {"distance_km": 0.1, "freq_hz": 3500000000.0, "los": true},
+    "expected_db": 82.88136088700551,
+    "tolerance_db": 0.1,
+    "derivation": "TR 38.901 Table 7.4.1-1 UMa LOS first-slope equation"
+  },
+  {
+    "id": "38901_uma_nlos_500m_3p5ghz",
+    "implementation": "uma_path_loss_db",
+    "arguments": {"distance_km": 0.5, "freq_hz": 3500000000.0, "los": false},
+    "expected_db": 129.8971086564571,
+    "tolerance_db": 0.1,
+    "derivation": "TR 38.901 Table 7.4.1-1 maximum of UMa LOS and NLOS-prime"
+  },
+  {
+    "id": "36777_uma_av_los_1km_2ghz",
+    "implementation": "uma_av_path_loss_db",
+    "arguments": {"distance_km": 1.0, "freq_hz": 2000000000.0, "altitude_m": 100.0, "los": true},
+    "expected_db": 100.02059991327963,
+    "tolerance_db": 0.1,
+    "derivation": "TR 36.777 Table B-2 UMa-AV LOS term"
+  },
+  {
+    "id": "38811_basic_600km_12ghz_plus_clutter",
+    "implementation": "ntn_basic_path_loss_db",
+    "arguments": {"distance_km": 600.0, "freq_hz": 12000000000.0, "clutter_loss_db": 2.5},
+    "expected_db": 172.09664992862537,
+    "tolerance_db": 0.1,
+    "derivation": "TR 38.811 basic free-space component plus explicitly supplied clutter"
+  }
+]

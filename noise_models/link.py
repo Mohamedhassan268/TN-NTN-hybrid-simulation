@@ -60,19 +60,39 @@ def _qam_ber(sinr_db: np.ndarray, m: np.ndarray) -> np.ndarray:
 
 def simulate_trace(scenario: dict, cfg, rng: np.random.Generator) -> dict:
     """scenario keys: distance_km, doppler_char_hz, rain_rate_mmhr, altitude_m (optional),
-    speed_ms (optional), platform_altitude_km."""
+    speed_ms (optional), platform_altitude_km. The trace duration is defined by
+    the supplied versioned technology configuration."""
     n, dt = cfg.n_steps, cfg.step_s
-    distance_km = scenario["distance_km"]
-    velocity_ms = scenario.get("speed_ms", 1.0)
+
+    def series(value):
+        return np.broadcast_to(np.asarray(value, dtype=float), (n,))
+
+    distance_km = series(scenario["distance_km"])
+    velocity_ms = series(scenario.get("speed_ms", 1.0))
 
     # --- geometry / large-scale ---
-    pl_db = pathloss.path_loss_db(distance_km, cfg.carrier_freq_hz)
-    elev_deg = pathloss.elevation_deg(distance_km, scenario.get("platform_altitude_km", 0.0))
+    elev_deg = series(scenario.get(
+        "elevation_deg",
+        pathloss.elevation_deg(distance_km, scenario.get("platform_altitude_km", 0.0)),
+    ))
     alt_m = scenario.get("altitude_m")
+    pl_db = pathloss.path_loss_db(
+        distance_km,
+        cfg.carrier_freq_hz,
+        tech_name=cfg.name,
+        los=scenario.get("los", True),
+        altitude_m=alt_m,
+        clutter_loss_db=scenario.get("clutter_loss_db", 0.0),
+        wall_loss_db=scenario.get("wall_loss_db", 0.0),
+    )
     shadow_sigma = cfg.shadowing_sigma_db
     if alt_m is not None:  # low-altitude UAV sees richer multipath -> larger shadowing variance
-        shadow_sigma = cfg.shadowing_sigma_db * (1.0 + np.exp(-alt_m / 300.0))
-    shadow_db = pathloss.shadowing_db_series(n, dt, shadow_sigma, velocity_ms, decorr_distance_m=20.0, rng=rng)
+        shadow_sigma = cfg.shadowing_sigma_db * (
+            1.0 + np.exp(-float(np.asarray(alt_m, dtype=float).mean()) / 300.0)
+        )
+    shadow_db = pathloss.shadowing_db_series(
+        n, dt, shadow_sigma, float(velocity_ms.mean()), decorr_distance_m=20.0, rng=rng
+    )
 
     # --- atmosphere ---
     rain_db = np.zeros(n)
@@ -85,7 +105,13 @@ def simulate_trace(scenario: dict, cfg, rng: np.random.Generator) -> dict:
         scint_db = atmosphere.scintillation_db_series(n, sigma_db=0.4, rng=rng)
 
     # --- small-scale fading ---
-    fd_hz_series = doppler.doppler_series_hz(n, dt, scenario.get("doppler_char_hz", 1.0), cfg.name, rng)
+    fd_input = np.asarray(scenario.get("doppler_char_hz", 1.0), dtype=float)
+    if fd_input.ndim == 0:
+        fd_hz_series = doppler.doppler_series_hz(n, dt, float(fd_input), cfg.name, rng)
+    else:
+        fd_hz_series = series(fd_input) + rng.normal(
+            0.0, np.maximum(np.abs(series(fd_input)) * 0.02, 0.5), n
+        )
     fade_db = fading.fading_gain_db(n, dt, float(np.mean(np.abs(fd_hz_series)) + 1e-3),
                                      cfg.fading_type, cfg.rician_k_db, rng)
 
@@ -123,7 +149,7 @@ def simulate_trace(scenario: dict, cfg, rng: np.random.Generator) -> dict:
     if cfg.name.startswith("WiFi"):
         burst_db = interference.contention_burst_loss_db(n, rng)
         extra_loss_frac = np.clip(burst_db / 40.0, 0.0, 1.0)
-    elif cfg.name == "LEO":
+    elif cfg.name.startswith("LEO"):
         outage = (rng.random(n) < 0.003).astype(float)  # rare handover/outage events
         extra_loss_frac = outage
     packet_loss_pct = np.clip((bler + extra_loss_frac - bler * extra_loss_frac) * 100.0, 0.0, 100.0)
@@ -140,18 +166,22 @@ def simulate_trace(scenario: dict, cfg, rng: np.random.Generator) -> dict:
     lqi = np.clip(sinr_norm - 0.5 * loss_penalty, 0.0, 100.0)
 
     return {
-        "distance_km": np.full(n, distance_km),
+        "distance_km": distance_km,
         "SNR_dB": snr_db,
         "SINR_dB": sinr_db,
         "RSSI_dBm": prx_dbm,
         "BER": ber,
+        "BLER": bler,
         "Throughput_Mbps": throughput_mbps,
         "Latency_ms": latency_ms,
         "Packet_Loss_pct": packet_loss_pct,
         "Doppler_Hz": fd_hz_series,
-        "Propagation_Delay_ms": np.full(n, prop_delay_ms),
-        "Rain_Rate_mmhr": np.full(n, scenario.get("rain_rate_mmhr", 0.0)),
+        "Propagation_Delay_ms": prop_delay_ms,
+        "Rain_Rate_mmhr": series(scenario.get("rain_rate_mmhr", 0.0)),
         "Rain_Fade_dB": rain_db,
         "Link_Quality_Index": lqi,
         "Spectral_Efficiency_bps_hz": se_bps_hz,
+        "MCS_Order": m_order,
+        "Code_Rate": code_rate,
+        "Spectral_Efficiency_Saturated": np.isclose(se_bps_hz, se_mod),
     }

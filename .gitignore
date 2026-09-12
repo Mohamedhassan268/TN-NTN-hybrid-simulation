@@ -4,3 +4,10 @@ __pycache__/
 
 # Large regenerated datasets (~2.5GB total) - regenerate via: python scripts/run_all.py full
 output/*.parquet
+
+# Revision-v2 generated data and experiment outputs. Rebuild from manifests/scripts.
+data/canonical_v2/records/
+data/canonical_v2/geometry_suites/
+artifacts/
+tmp/
+d3rlpy_logs/

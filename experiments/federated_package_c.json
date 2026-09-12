@@ -1,0 +1,14 @@
+{
+  "package": "C",
+  "title": "Hybrid Quantum Classical Hierarchical Federated Learning for Network Selection in TN NTN Systems",
+  "dataset_version": "2.0.0",
+  "topologies": ["centralized", "fedavg", "fedprox", "hierarchical"],
+  "validation_selection": "highest macro_f1; balanced_accuracy breaks ties",
+  "classical_seeds": [0, 1, 2, 3, 4],
+  "hybrid_seeds": [0, 1, 2, 3, 4],
+  "hybrid_latent_dimensions": [4, 6, 8],
+  "hybrid_conditions": ["ideal", "finite_shot", "noisy"],
+  "output_classes": 5,
+  "success": "within 0.02 macro-F1 of selected classical topology and lower parameter count or model-update bytes",
+  "claims_prohibited": ["quantum advantage", "hardware deployment"]
+}

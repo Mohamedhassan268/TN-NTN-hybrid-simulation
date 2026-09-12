@@ -1,0 +1,41 @@
+[
+  {
+    "standard": "3GPP TR 38.901",
+    "version": "17.1.0",
+    "component": "UMa LOS and NLOS path loss",
+    "clause_or_table": "Table 7.4.1-1",
+    "equation": "PL_LOS = 28 + 22 log10(d3D) + 20 log10(fc) before breakpoint; PL_NLOS = max(PL_LOS, 13.54 + 39.08 log10(d3D) + 20 log10(fc) - 0.6(hUT-1.5))",
+    "implementation": "noise_models.channels.pathloss.uma_path_loss_db",
+    "parameter_domain": "0.5-100 GHz; d2D >= 10 m; hBS=25 m; hUT=1.5 m in this study",
+    "reference_vectors": ["38901_uma_los_100m_3p5ghz", "38901_uma_nlos_500m_3p5ghz"],
+    "deviation": "LOS state is sampled externally by the scenario generator; spatial consistency and full fast-fading clusters are custom/out of scope.",
+    "external_crosscheck": "LLSim5G comparison harness defined; frozen external output not yet present",
+    "claim_blocking_if_failed": true
+  },
+  {
+    "standard": "3GPP TR 36.777",
+    "version": "15.0.0",
+    "component": "UMa-AV LOS/high-altitude NLOS path loss",
+    "clause_or_table": "Table B-2",
+    "equation": "PL_LOS = 28 + 22 log10(d3D) + 20 log10(fc); high-altitude NLOS uses the Table B-2 height-dependent term and max with LOS",
+    "implementation": "noise_models.channels.pathloss.uma_av_path_loss_db",
+    "parameter_domain": "2 GHz study configuration; UAV altitude 50-300 m",
+    "reference_vectors": ["36777_uma_av_los_1km_2ghz"],
+    "deviation": "LOS state is sampled by a disclosed elevation-dependent probability; no full 3D cluster model.",
+    "external_crosscheck": "LLSim5G comparison harness defined; frozen external output not yet present",
+    "claim_blocking_if_failed": true
+  },
+  {
+    "standard": "3GPP TR 38.811",
+    "version": "15.4.0",
+    "component": "Basic NTN free-space path-loss component",
+    "clause_or_table": "Section 6.6 path-loss decomposition",
+    "equation": "PL_basic = FSPL(d3D, fc) + explicitly supplied clutter loss",
+    "implementation": "noise_models.channels.pathloss.ntn_basic_path_loss_db",
+    "parameter_domain": "S/Ku/Ka band configurations; persisted spherical-Earth slant range; elevation >= 10 degrees for availability",
+    "reference_vectors": ["38811_basic_600km_12ghz_plus_clutter"],
+    "deviation": "Only the basic path-loss component is attributed to TR 38.811. Mobility, random fading, outage, interference, MCS, and KPI mapping are separately documented custom components.",
+    "external_crosscheck": "OpenNTN comparison harness defined; frozen external output not yet present",
+    "claim_blocking_if_failed": true
+  }
+]

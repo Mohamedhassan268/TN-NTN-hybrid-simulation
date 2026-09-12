@@ -1,0 +1,46 @@
+{
+  "fit_split": "train",
+  "fit_bands": [
+    "ku",
+    "ka",
+    "s"
+  ],
+  "percentiles": [
+    1.0,
+    99.0
+  ],
+  "utility": {
+    "throughput": {
+      "low": 3.1674857042431176e-20,
+      "high": 6.38630626940095
+    },
+    "latency": {
+      "low": 0.2854401341441647,
+      "high": 2.1926913722200787
+    },
+    "packet_loss": {
+      "low": 0.0018966060958892576,
+      "high": 4.615120516841259
+    },
+    "ber": {
+      "low": 0.30152032103395526,
+      "high": 12.0
+    }
+  },
+  "observation": {
+    "rssi": {
+      "low": -144.19051094048612,
+      "high": -45.635152692488056
+    },
+    "sinr": {
+      "low": -60.00000000000043,
+      "high": 41.22782868041914
+    }
+  },
+  "reference_weights": {
+    "throughput": 0.3333333333333333,
+    "latency": 0.3333333333333333,
+    "reliability": 0.3333333333333333
+  },
+  "reference_handover_penalty": 0.15
+}

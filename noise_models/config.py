@@ -7,6 +7,7 @@ parameters that drive the physics; the *other* metric columns (SNR, BER,
 throughput, ...) are recomputed from scratch by the link chain and only used
 afterwards as calibration/validation references.
 """
+import math
 from dataclasses import dataclass, replace
 
 
@@ -97,6 +98,39 @@ TECH_CONFIGS = {
         throughput_efficiency=0.55, throughput_efficiency_sigma_db=2.0,
     ),
 }
+
+# Ka-band (20 GHz) LEO variant for the controlled band-sensitivity study. Clone of "LEO"
+# above, changing ONLY what is physically frequency-dependent:
+#   - carrier_freq_hz: 12.0 -> 20.0 GHz
+#   - antenna_gain_db: +20*log10(20/12) dB, the fixed-aperture gain scaling with frequency
+# Bandwidth, noise figure, Tx power, Rician K, shadowing, interference margin, modulation
+# order, and SINR ceiling are held constant -- these are design/component choices, not
+# derivable from frequency alone, so inventing new values for them would reintroduce exactly
+# the kind of unverified "generic numbers" this rerun exists to eliminate. Holding them fixed
+# is also what makes this a controlled comparison: only frequency-dependent physics
+# (path loss in pathloss.py, rain/gaseous attenuation in atmosphere.py, and this antenna
+# gain term) differs between "LEO" and "LEO_Ka".
+_LEO_KA_ANTENNA_GAIN_DELTA_DB = 20.0 * math.log10(20.0e9 / TECH_CONFIGS["LEO"].carrier_freq_hz)
+TECH_CONFIGS["LEO_Ka"] = replace(
+    TECH_CONFIGS["LEO"],
+    name="LEO_Ka",
+    carrier_freq_hz=20.0e9,
+    antenna_gain_db=TECH_CONFIGS["LEO"].antenna_gain_db + _LEO_KA_ANTENNA_GAIN_DELTA_DB,
+)
+
+# S-band (2.2 GHz) LEO variant, same clone-and-derive pattern as "LEO_Ka" above. 2.2 GHz is the
+# ITU space-operation/space-research downlink allocation (2200-2290 MHz), the band actually used
+# for LEO TT&C and narrowband constellations (e.g. Orbcomm) -- NOT representative of the
+# high-throughput broadband links this dataset's Throughput_Mbps values model; that caveat must
+# accompany any S-band result. Only carrier_freq_hz and the fixed-aperture antenna_gain_db differ
+# from "LEO"; everything else held constant for the same controlled-comparison reason as Ka.
+_LEO_S_ANTENNA_GAIN_DELTA_DB = 20.0 * math.log10(2.2e9 / TECH_CONFIGS["LEO"].carrier_freq_hz)
+TECH_CONFIGS["LEO_S"] = replace(
+    TECH_CONFIGS["LEO"],
+    name="LEO_S",
+    carrier_freq_hz=2.2e9,
+    antenna_gain_db=TECH_CONFIGS["LEO"].antenna_gain_db + _LEO_S_ANTENNA_GAIN_DELTA_DB,
+)
 
 
 def get_config(tech_name: str) -> TechConfig:

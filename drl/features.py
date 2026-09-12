@@ -46,3 +46,25 @@ def parse_observation(obs: np.ndarray) -> dict:
         "sinr_norm": per_network[:, 2],
         "prev_onehot": prev_onehot,
     }
+
+
+def build_canonical_context(frame: pd.DataFrame, params: dict, include_previous: bool = False) -> np.ndarray:
+    """Build the documented v2 21- or 26-value observation from one scenario step."""
+    from .reference_utility import normalize_observation
+
+    indexed = frame.set_index("network_type")
+    area = str(indexed["area"].iloc[0])
+    values = [1.0 if candidate == area else 0.0 for candidate in AREAS]
+    for network in NETWORK_TYPES:
+        row = indexed.loc[network]
+        if bool(row["available"]):
+            values.extend([
+                1.0,
+                normalize_observation(float(row["rssi_dbm"]), "rssi", params),
+                normalize_observation(float(row["sinr_db"]), "sinr", params),
+            ])
+        else:
+            values.extend([0.0, 0.0, 0.0])
+    if include_previous:
+        values.extend([0.0] * len(NETWORK_TYPES))
+    return np.asarray(values, dtype=np.float32)
