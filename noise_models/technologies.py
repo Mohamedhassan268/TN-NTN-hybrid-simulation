@@ -9,6 +9,8 @@ PLATFORM_ALTITUDE_KM = {
     "WiFi6E_6GHz": 0.003,
     "HAPS": 20.0,     # stratospheric platform
     "LEO": 550.0,     # representative LEO shell altitude
+    "LEO_Ka": 550.0,  # same orbital shell -- altitude doesn't depend on carrier frequency
+    "LEO_S": 550.0,   # same orbital shell as LEO/LEO_Ka
     "UAV": 0.0,       # handled via altitude_m directly
 }
 

@@ -1,0 +1,37 @@
+{
+  "dataset_version": "2.0.0",
+  "total_trajectories": 1200,
+  "batch_size": 20,
+  "base_seed": 20260912,
+  "bands": [
+    "ku",
+    "ka",
+    "s"
+  ],
+  "decision_interval_s": 10.0,
+  "episode_steps": 60,
+  "split_policy": {
+    "train": [
+      0,
+      799
+    ],
+    "validation": [
+      800,
+      999
+    ],
+    "test": [
+      1000,
+      1199
+    ]
+  },
+  "configuration_sha256": "6efc111be8563d4acfb84536f242692941282a2d47be004616a5da75567f732d",
+  "rows": 1080000,
+  "trajectories": 1200,
+  "runtime": {
+    "python": "3.14.2",
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "pyarrow": "24.0.0"
+  },
+  "status": "complete"
+}

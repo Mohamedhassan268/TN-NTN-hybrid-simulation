@@ -25,6 +25,7 @@ This does NOT model real orbital/ephemeris mechanics (no TLE data, no ground-tra
 geometry) - it is an analytic approximation sufficient to make handover cost, network
 comparison, and forced-handover-on-pass-end meaningful without a full orbital simulator.
 """
+import os
 from dataclasses import dataclass
 
 import numpy as np
@@ -32,10 +33,16 @@ import pandas as pd
 
 from noise_models.technologies import PLATFORM_ALTITUDE_KM
 
+# LEO resolves to a band-specific TechConfig based on TN_NTN_DATASET (see noise_models/config.py
+# for the "LEO_Ka"/"LEO_S" variants -- same physical config as "LEO" except carrier_freq_hz and
+# the frequency-derived antenna_gain_db). Every other technology is band-invariant.
+_LEO_TECH_BY_DATASET = {"ku": "LEO", "ka": "LEO_Ka", "s": "LEO_S"}
+_LEO_TECH = _LEO_TECH_BY_DATASET[os.environ.get("TN_NTN_DATASET", "ku")]
+
 NETWORK_TO_TECH_CONFIG = {
     "NR_5G": "5G_NR",
     "WiFi": "WiFi6_5GHz",
-    "SAT (LEO)": "LEO",
+    "SAT (LEO)": _LEO_TECH,
     "HAPS": "HAPS",
     "UAV": "UAV",
 }
@@ -131,19 +138,27 @@ def _ntn_distance_from_elevation(elev_deg: np.ndarray, platform_altitude_km: flo
     return platform_altitude_km / np.sin(np.radians(safe_elev))
 
 
-def generate_episode_trajectories(n_steps: int, geometry_ranges: dict, rng: np.random.Generator) -> dict:
+def generate_episode_trajectories(n_steps: int, geometry_ranges: dict, rng: np.random.Generator,
+                                   pass_params: dict | None = None) -> dict:
     """Generates a trajectory for EVERY network type (not just those available in the
     initial Area) since Area now changes over the episode and any network may become
     relevant at some step. Returns {network_type: {"distance_km": array, "rain_rate_mmhr":
     array, "doppler_hz": float, "platform_altitude_km": float, "visible": array[bool],
-    "altitude_m": array|None, "speed_ms": array|None}}."""
+    "altitude_m": array|None, "speed_ms": array|None}}.
+
+    pass_params overrides _PASS_PARAMS (same shape: {network: {"peak_range", "pass_len_range",
+    "gap_len_range"}}) for evaluating under a different orbital-geometry regime than the one
+    used at training time -- e.g. a generalization test. Defaults to _PASS_PARAMS, reproducing
+    prior behavior exactly."""
+    if pass_params is None:
+        pass_params = _PASS_PARAMS
     trajectories = {}
     for network, fields in geometry_ranges.items():
         rain_r = fields["Rain_Rate_mmhr"]
         platform_altitude_km = PLATFORM_ALTITUDE_KM[NETWORK_TO_TECH_CONFIG[network]]
 
         if network in NTN_NETWORKS:
-            params = _PASS_PARAMS[network]
+            params = pass_params[network]
             elev, visible = _generate_pass_elevation(
                 rng, n_steps, params["peak_range"], params["pass_len_range"], params["gap_len_range"]
             )

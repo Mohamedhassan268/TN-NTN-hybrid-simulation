@@ -3,6 +3,7 @@ Phase-1 composite QoE reward, and writes the fitted normalization params for
 reuse at inference time.
 """
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -13,8 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from drl.reward import RewardWeights, compute_reward, fit_normalization
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
-PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
+DATASET = os.environ.get("TN_NTN_DATASET", "ku")  # "ka" selects the synthetic Ka-band dataset
+if DATASET == "ka":
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Ka.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params_ka.json"
+else:
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
 
 
 def main():
