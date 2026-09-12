@@ -6,6 +6,7 @@ before a network is picked. Action = network_type. Reward = Phase-1 composite Qo
 contextual-bandit problem (no handover cost / sequential coupling yet - that's Phase 2).
 """
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -21,8 +22,13 @@ from drl.features import AREAS, NETWORK_TYPES, build_actions, build_state
 from drl.reward import RewardWeights, compute_reward, fit_normalization
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
-PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
+DATASET = os.environ.get("TN_NTN_DATASET", "ku")
+if DATASET == "ka":
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Ka.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params_ka.json"
+else:
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
 
 SEED = 0
 N_STEPS = 40_000
@@ -31,7 +37,7 @@ ALPHA = 0.1  # lower conservative-penalty weight: our state space is tiny (6 sta
              # out-of-distribution risk for CQL's conservatism to guard against;
              # default alpha=1.0 over-penalizes and fights convergence to the true
              # empirical optimum here.
-MODEL_PATH = ROOT / "drl" / f"cql_network_selector_alpha{ALPHA}.d3"
+MODEL_PATH = ROOT / "drl" / f"cql_network_selector_alpha{ALPHA}{'_ka' if DATASET == 'ka' else ''}.d3"
 
 
 def main():

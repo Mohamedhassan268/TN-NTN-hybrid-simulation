@@ -178,7 +178,12 @@ def sim_haps(n_ues=20, duration=6000, interval=10, seed=42):
 # ─────────────────────────────────────────────────────────────
 # 3. LEO — NTN_Data_LEO.csv  (16 columns, 11,980 rows)
 # ─────────────────────────────────────────────────────────────
-def sim_leo(n_ues=20, duration=6000, interval=10, seed=42):
+def sim_leo(n_ues=20, duration=6000, interval=10, seed=42, freq_ghz=12.5, snr_offset_db=0.0):
+    """freq_ghz/snr_offset_db default to the original Ku-band (12.5 GHz) parameterization,
+    reproducing the pre-existing output byte-for-byte. Pass freq_ghz=20.0,
+    snr_offset_db=-20*math.log10(20.0/12.5) (~-4.08 dB) for a physically consistent Ka-band
+    variant: rain_atten() switches to its Ka coefficients automatically at freq_ghz>=15, and
+    snr_offset_db applies the corresponding FSPL penalty to the base SNR constant."""
     np.random.seed(seed); random.seed(seed)
     rows = []
     T = 5760.0  # LEO orbital period ~96 min
@@ -193,9 +198,9 @@ def sim_leo(n_ues=20, duration=6000, interval=10, seed=42):
 
             s['rain'],s['rain_rate'],s['rain_dur'] = rain_event(
                 s['rain'],s['rain_rate'],s['rain_dur'],interval,0.008)
-            rain_db = rain_atten(s['rain_rate'], el, 12.5)
+            rain_db = rain_atten(s['rain_rate'], el, freq_ghz)
 
-            snr = 5+12*math.sin(math.radians(el))-rain_db+np.random.normal(0,1.5)
+            snr = 5+snr_offset_db+12*math.sin(math.radians(el))-rain_db+np.random.normal(0,1.5)
             sinr = snr-(3+s['beam_id']%3)+np.random.normal(0,1)
             rssi = -86+snr*0.5+np.random.normal(0,1)
             ber = max(0,(1e-4 if sinr>10 else 1e-3 if sinr>5 else 1e-2 if sinr>0 else 0.1)

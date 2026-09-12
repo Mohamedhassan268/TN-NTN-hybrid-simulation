@@ -7,6 +7,7 @@ monotonically to handover penalty, and reports per-profile behavior honestly
 (including any non-monotonic surprises) rather than smoothing over them.
 """
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -22,20 +23,32 @@ from drl.evaluation import SB3Policy, evaluate_policy, summarize_eval
 from drl.reward import RewardWeights
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
-PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
-FIG_DIR = ROOT / "drl" / "figures"
+DATASET = os.environ.get("TN_NTN_DATASET", "ku")
+if DATASET == "ka":
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Ka.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params_ka.json"
+    FIG_DIR = ROOT / "drl" / "figures_ka"
+elif DATASET == "s":
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
+    FIG_DIR = ROOT / "drl" / "figures_s"
+else:
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
+    FIG_DIR = ROOT / "drl" / "figures"
 FIG_DIR.mkdir(exist_ok=True)
 
 SEED = 0
-TOTAL_TIMESTEPS = 50_000  # reduced vs. Phase 5's 100k: this sweep trains 8 separate
-                          # PPO models (4 handover values + 4 reward profiles), so the
+TOTAL_TIMESTEPS = 50_000  # reduced vs. Phase 5's 100k: this sweep trains 9 separate
+                          # PPO models (5 handover values + 4 reward profiles), so the
                           # per-run budget is scoped down to keep total runtime tractable.
 EPISODE_STEPS = 60
 N_ENVS = 4
 N_EVAL_EPISODES = 100
 
-HANDOVER_PENALTIES = [0.05, 0.15, 0.30, 0.50]
+# 0.0 included as a true zero-penalty ablation (ties the switch-avoidance claim directly
+# to the handover-cost term, rather than inferring it from the lowest tested nonzero value).
+HANDOVER_PENALTIES = [0.0, 0.05, 0.15, 0.30, 0.50]
 REWARD_PROFILES = {
     "balanced": RewardWeights(throughput=1 / 3, latency=1 / 3, reliability=1 / 3),
     "throughput-leaning": RewardWeights(throughput=0.6, latency=0.2, reliability=0.2),

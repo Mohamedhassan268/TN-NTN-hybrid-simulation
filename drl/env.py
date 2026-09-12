@@ -47,7 +47,8 @@ def _load_area_networks(df: pd.DataFrame) -> dict:
 class NetworkSelectionEnv(gym.Env):
     def __init__(self, csv_path: str | Path, reward_params_path: str | Path,
                  episode_steps: int = 60, handover_penalty: float = HANDOVER_PENALTY,
-                 reward_weights: RewardWeights = RewardWeights(), seed: int | None = None):
+                 reward_weights: RewardWeights = RewardWeights(), seed: int | None = None,
+                 pass_params: dict | None = None):
         super().__init__()
         df = pd.read_csv(csv_path)
         self._area_networks = _load_area_networks(df)
@@ -56,6 +57,8 @@ class NetworkSelectionEnv(gym.Env):
         self._reward_weights = reward_weights
         self._episode_steps = episode_steps
         self._handover_penalty = handover_penalty
+        self._pass_params = pass_params  # None => drl.mobility._PASS_PARAMS (nominal geometry);
+                                          # override for a held-out-geometry generalization eval
 
         self.action_space = spaces.Discrete(len(NETWORK_TYPES))
         # obs = Area one-hot + per-network [available, RSSI_norm, SINR_norm] + prev-action one-hot
@@ -130,7 +133,8 @@ class NetworkSelectionEnv(gym.Env):
         super().reset(seed=seed)
         if seed is not None:
             self._rng = np.random.default_rng(seed)
-        self._trajectories = generate_episode_trajectories(self._episode_steps, self._geometry_ranges, self._rng)
+        self._trajectories = generate_episode_trajectories(self._episode_steps, self._geometry_ranges, self._rng,
+                                                             pass_params=self._pass_params)
         self._area_seq = sample_area_sequence(self._rng, self._episode_steps)
         self._t = 0
         self._prev_action = None

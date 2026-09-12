@@ -1,5 +1,6 @@
 """Figures for the Phase 5 policy comparison (RL agents vs. classical telecom
 baselines vs. oracle), from the results written by scripts/train_agents.py."""
+import os
 import sys
 from pathlib import Path
 
@@ -9,7 +10,8 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 ROOT = Path(__file__).resolve().parent.parent
-FIG_DIR = ROOT / "drl" / "figures"
+DATASET = os.environ.get("TN_NTN_DATASET", "ku")
+FIG_DIR = ROOT / "drl" / {"ka": "figures_ka", "s": "figures_s"}.get(DATASET, "figures")
 
 POLICY_ORDER = ["random", "greedy", "hysteresis", "dqn", "ppo", "oracle"]
 COLORS = {

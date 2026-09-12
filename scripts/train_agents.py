@@ -4,6 +4,7 @@ NetworkSelectionEnv (drl/env.py), evaluated against the classical telecom baseli
 single-seed/5-episode scripts/train_ppo.py evaluation.
 """
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -20,10 +21,31 @@ from drl.evaluation import SB3Policy, evaluate_policy, rollout_episode, summariz
 from drl.reward import RewardWeights
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
-PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
-FIG_DIR = ROOT / "drl" / "figures"
+DATASET = os.environ.get("TN_NTN_DATASET", "ku")
+if DATASET == "ka":
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Ka.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params_ka.json"
+    FIG_DIR = ROOT / "drl" / "figures_ka"
+    MODEL_DIR = ROOT / "drl" / "models_ka"
+    MONITOR_DIR = ROOT / "drl" / "monitor_ka"
+elif DATASET == "s":
+    # S-band reuses the Ku CSV/reward-norm params verbatim (both are fit from static columns,
+    # band-invariant); only noise_models' LEO_S TechConfig (see drl/mobility.py) differs at
+    # simulation time. Cleaner than Ka's approach -- see plan STATUS UPDATE.
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
+    FIG_DIR = ROOT / "drl" / "figures_s"
+    MODEL_DIR = ROOT / "drl" / "models_s"
+    MONITOR_DIR = ROOT / "drl" / "monitor_s"
+else:
+    CSV_PATH = ROOT / "data" / "Hybrid_Network_TN_NTN_Final.csv"
+    PARAMS_PATH = ROOT / "drl" / "reward_norm_params.json"
+    FIG_DIR = ROOT / "drl" / "figures"
+    MODEL_DIR = ROOT / "drl" / "models"
+    MONITOR_DIR = ROOT / "drl" / "monitor"
 FIG_DIR.mkdir(exist_ok=True)
+MODEL_DIR.mkdir(exist_ok=True)
+MONITOR_DIR.mkdir(exist_ok=True)
 
 SEEDS = [0, 1, 2]
 TOTAL_TIMESTEPS = 100_000
@@ -37,14 +59,16 @@ def make_env():
 
 
 def train_ppo(seed: int) -> PPO:
-    vec_env = make_vec_env(make_env, n_envs=N_ENVS, seed=seed)
+    vec_env = make_vec_env(make_env, n_envs=N_ENVS, seed=seed,
+                            monitor_dir=str(MONITOR_DIR / f"ppo_seed{seed}"))
     model = PPO("MlpPolicy", vec_env, seed=seed, verbose=1, n_steps=512, batch_size=256)
     model.learn(total_timesteps=TOTAL_TIMESTEPS)
     return model
 
 
 def train_dqn(seed: int) -> DQN:
-    vec_env = make_vec_env(make_env, n_envs=N_ENVS, seed=seed)
+    vec_env = make_vec_env(make_env, n_envs=N_ENVS, seed=seed,
+                            monitor_dir=str(MONITOR_DIR / f"dqn_seed{seed}"))
     model = DQN("MlpPolicy", vec_env, seed=seed, verbose=1, learning_starts=1000,
                 buffer_size=50_000, train_freq=4, target_update_interval=1000)
     model.learn(total_timesteps=TOTAL_TIMESTEPS)
@@ -53,9 +77,17 @@ def train_dqn(seed: int) -> DQN:
 
 def eval_agent_multi_seed(train_fn, label: str) -> pd.DataFrame:
     frames = []
+    model_cls = PPO if label == "ppo" else DQN
     for seed in SEEDS:
-        print(f"  training {label} seed={seed} ...", flush=True)
-        model = train_fn(seed)
+        model_path = MODEL_DIR / f"{label}_seed{seed}.zip"
+        if model_path.exists():
+            print(f"  {label} seed={seed}: found saved model at {model_path}, skipping training", flush=True)
+            model = model_cls.load(str(model_path))
+        else:
+            print(f"  training {label} seed={seed} ...", flush=True)
+            model = train_fn(seed)
+            model.save(str(model_path))
+            print(f"  saved model: {model_path}", flush=True)
         print(f"  evaluating {label} seed={seed} ({N_EVAL_EPISODES} episodes)...", flush=True)
         policy = SB3Policy(model)
         eval_df = evaluate_policy(make_env, policy, n_episodes=N_EVAL_EPISODES, base_seed=20_000 + seed * 1000,
