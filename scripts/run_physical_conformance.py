@@ -22,31 +22,54 @@ IMPLEMENTATIONS = {
 
 def run(vectors_path: Path, output_path: Path, external_path: Path | None = None) -> pd.DataFrame:
     vectors = json.loads(vectors_path.read_text(encoding="utf-8"))
-    external = {}
+    external: dict[str, dict] = {}
     if external_path and external_path.exists():
         external_frame = pd.read_csv(external_path)
-        external = external_frame.set_index("id")["external_db"].to_dict()
+        required_columns = {"id", "external_db", "source", "source_commit", "status", "notes"}
+        missing_columns = required_columns - set(external_frame.columns)
+        if missing_columns:
+            raise SystemExit(f"external reference file lacks columns: {sorted(missing_columns)}")
+        if external_frame["id"].duplicated().any():
+            raise SystemExit("external reference file contains duplicate vector ids")
+        expected_ids = {vector["id"] for vector in vectors}
+        if set(external_frame["id"]) != expected_ids:
+            raise SystemExit("external reference file does not exactly cover the reference vectors")
+        external = external_frame.set_index("id").to_dict(orient="index")
     rows = []
     for vector in vectors:
         actual = float(IMPLEMENTATIONS[vector["implementation"]](**vector["arguments"]))
         error = abs(actual - float(vector["expected_db"]))
+        external_row = external.get(vector["id"], {})
+        external_value = external_row.get("external_db")
+        external_status = external_row.get("status")
+        if external_status == "validated" and pd.isna(external_value):
+            raise SystemExit(f"validated external vector lacks a numeric value: {vector['id']}")
         external_error = (
-            abs(actual - float(external[vector["id"]])) if vector["id"] in external else None
+            abs(actual - float(external_value))
+            if external_status == "validated" else None
         )
         rows.append({
             "id": vector["id"], "actual_db": actual,
             "source_expected_db": vector["expected_db"], "source_error_db": error,
             "tolerance_db": vector["tolerance_db"], "source_pass": error <= vector["tolerance_db"],
-            "external_db": external.get(vector["id"]), "external_error_db": external_error,
+            "external_db": external_value, "external_error_db": external_error,
             "external_pass": None if external_error is None else external_error <= vector["tolerance_db"],
+            "external_status": external_status,
+            "external_source": external_row.get("source"),
+            "external_commit": external_row.get("source_commit"),
         })
     result = pd.DataFrame(rows)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(output_path, index=False)
     if not result["source_pass"].all():
         raise SystemExit("physical reference-vector conformance failed; standards claim is blocked")
-    if external and not result.loc[result["external_db"].notna(), "external_pass"].all():
-        raise SystemExit("external simulator cross-check failed; affected realism claim is blocked")
+    if external:
+        validated = result["external_status"] == "validated"
+        if not validated.any() or not result.loc[validated, "external_pass"].all():
+            raise SystemExit("external simulator cross-check failed; affected realism claim is blocked")
+        unapplied = result["external_status"] == "not_applicable"
+        if not (validated | unapplied).all():
+            raise SystemExit("external simulator cross-check contains unresolved vectors")
     return result
 
 

@@ -9,7 +9,7 @@
     "parameter_domain": "0.5-100 GHz; d2D >= 10 m; hBS=25 m; hUT=1.5 m in this study",
     "reference_vectors": ["38901_uma_los_100m_3p5ghz", "38901_uma_nlos_500m_3p5ghz"],
     "deviation": "LOS state is sampled externally by the scenario generator; spatial consistency and full fast-fading clusters are custom/out of scope.",
-    "external_crosscheck": "LLSim5G comparison harness defined; frozen external output not yet present",
+    "external_crosscheck": "Validated against LLSim5G 1.0.0 at pinned commit 87ec64e0a9ed2c72384d046eabfa05071870f041",
     "claim_blocking_if_failed": true
   },
   {
@@ -22,7 +22,7 @@
     "parameter_domain": "2 GHz study configuration; UAV altitude 50-300 m",
     "reference_vectors": ["36777_uma_av_los_1km_2ghz"],
     "deviation": "LOS state is sampled by a disclosed elevation-dependent probability; no full 3D cluster model.",
-    "external_crosscheck": "LLSim5G comparison harness defined; frozen external output not yet present",
+    "external_crosscheck": "Not applicable: LLSim5G's A2G path-loss implementation cites Khawaja et al. (2019), not TR 36.777; source-derived deterministic vector retained",
     "claim_blocking_if_failed": true
   },
   {
@@ -35,7 +35,7 @@
     "parameter_domain": "S/Ku/Ka band configurations; persisted spherical-Earth slant range; elevation >= 10 degrees for availability",
     "reference_vectors": ["38811_basic_600km_12ghz_plus_clutter"],
     "deviation": "Only the basic path-loss component is attributed to TR 38.811. Mobility, random fading, outage, interference, MCS, and KPI mapping are separately documented custom components.",
-    "external_crosscheck": "OpenNTN comparison harness defined; frozen external output not yet present",
+    "external_crosscheck": "Validated against OpenNTN 0.1.0 at pinned commit f294df0480f31a4148e8fe4af9b17dd4abcdb869 with Sionna 1.2.2",
     "claim_blocking_if_failed": true
   }
 ]

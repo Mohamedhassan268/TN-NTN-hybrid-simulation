@@ -1,0 +1,5 @@
+id,external_db,source,source_version,source_commit,status,command_or_notebook,notes
+36777_uma_av_los_1km_2ghz,,,,,not_applicable,,"LLSim5G's A2G implementation cites Khawaja et al. (2019), not 3GPP TR 36.777; the deterministic standard vector remains required."
+38811_basic_600km_12ghz_plus_clutter,172.09664916992188,OpenNTN,0.1.0,f294df0480f31a4148e8fe4af9b17dd4abcdb869,validated,python scripts/generate_external_reference_outputs.py --llsim-root tmp/vendor/LLSim5G --openntn-root tmp/vendor/OpenNTN,Upstream equation 6.6-1 with sigmaSF=0 and declared 2.5 dB NLOS clutter.
+38901_uma_los_100m_3p5ghz,82.88136088700551,LLSim5G,1.0.0,87ec64e0a9ed2c72384d046eabfa05071870f041,validated,python scripts/generate_external_reference_outputs.py --llsim-root tmp/vendor/LLSim5G --openntn-root tmp/vendor/OpenNTN,Direct call to upstream TR 38.901 UMa path-loss implementation.
+38901_uma_nlos_500m_3p5ghz,129.8971086564571,LLSim5G,1.0.0,87ec64e0a9ed2c72384d046eabfa05071870f041,validated,python scripts/generate_external_reference_outputs.py --llsim-root tmp/vendor/LLSim5G --openntn-root tmp/vendor/OpenNTN,Direct call to upstream TR 38.901 UMa path-loss implementation.
