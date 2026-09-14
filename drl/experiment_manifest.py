@@ -12,7 +12,6 @@ import numpy
 import pandas
 import scipy
 import stable_baselines3
-import torch
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -35,8 +34,6 @@ def runtime_versions() -> dict:
         "gymnasium": gymnasium.__version__,
         "stable_baselines3": stable_baselines3.__version__,
         "d3rlpy": d3rlpy.__version__,
-        "torch": torch.__version__,
-        "torch_cuda": torch.version.cuda,
     }
 
 

@@ -18,8 +18,8 @@ def test_checkpoint_manifest_binds_dataset_splits_dependencies_and_result_path()
     )
     assert metadata["configuration_sha256"]
     assert metadata["runtime"]["d3rlpy"]
-    assert metadata["runtime"]["torch"]
     assert metadata["device"]["resolved"] == "cpu"
+    assert metadata["device"]["torch"] == "test"
     assert metadata["dataset"]["dataset_version"] == "2.0.0"
     assert metadata["dataset"]["splits_sha256"]
     assert metadata["result_path"].endswith("model.zip")
