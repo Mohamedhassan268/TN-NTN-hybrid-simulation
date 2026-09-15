@@ -21,6 +21,14 @@ python scripts/make_pareto_revision_v2.py
 python scripts/release_gate_revision_v2.py
 ```
 
+After the CPU-only critic selection is frozen, benchmark GPU adoption before core PPO/DQN training:
+
+```powershell
+python scripts/benchmark_ppo_device.py
+```
+
+CUDA is adopted only when the frozen benchmark reports `cuda_adopted`, which requires at least a 4x matched end-to-end speed-up. Otherwise run core training with the default `--device cpu`.
+
 The pinned external OpenNTN/LLSim5G cross-check passed on 2026-09-12. The release gate intentionally continues to fail until the PPO critic selection, full 10-seed core campaign, five-seed sweeps, frozen results, clean-clone verification, and final DOCX render have been completed.
 
 A simulation-and-learning stack for hybrid **Terrestrial (TN)** and **Non-Terrestrial (NTN)**

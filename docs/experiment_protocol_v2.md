@@ -15,7 +15,7 @@ Status as of 2026-09-12: steps 1 and 2 pass. External values were generated from
 1. Run the deterministic schema, environment, oracle, statistics, and internal conformance tests.
 2. Produce and archive frozen outputs from OpenNTN and LLSim5G; run `scripts/run_physical_conformance.py --external ...`. Do not make an NTN or 3GPP realism claim without this gate.
 3. Run `scripts/develop_ppo_critic.py`, review `selected_configuration.json`, and copy the selected capacity into the core manifest before core PPO training.
-4. Run `scripts/train_revision_v2.py` for PPO and DQN, and `scripts/train_cql_revision_v2.py` separately for CQL. The three training branches never load each other's checkpoints.
+4. After critic selection, run `scripts/benchmark_ppo_device.py`. CUDA may be used for PPO/DQN only when the matched benchmark records `cuda_adopted` with at least a 4x end-to-end speed-up; otherwise use the default CPU device. Run `scripts/train_revision_v2.py` for PPO and DQN, and `scripts/train_cql_revision_v2.py` separately for CQL. The three training branches never load each other's checkpoints.
 5. Tune the 24 hysteresis configurations only on validation trajectories, then run `scripts/evaluate_revision_v2.py` once against the 200 final test trajectories.
 6. Run `scripts/statistics_revision_v2.py`, `scripts/run_sensitivity_revision_v2.py`, `scripts/make_pareto_revision_v2.py`, and `scripts/evaluate_geometry_revision_v2.py`.
 7. Rebuild tables/figures and create the Word manuscript only from the frozen results paths. Finally run the clean-clone/release gate.
