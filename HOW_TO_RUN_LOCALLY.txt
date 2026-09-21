@@ -41,6 +41,39 @@ opened directly, for example:
 Do not close the Windows Terminal tab while its Python worker is active. Keep
 the computer awake, connected to power, and well ventilated.
 
+SAFE STOP AND LATER RESUME
+--------------------------
+
+To stop a running campaign safely, click its visible Windows Terminal tab and
+press Ctrl+C once. Wait for Python to stop and for the PowerShell prompt to
+return. Do not use Task Manager or Stop-Process -Force unless the process is
+unresponsive and Ctrl+C has had time to work.
+
+Verify that the worker is no longer running:
+
+    Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*revision_v2.py*' } | Select-Object ProcessId,Name,CommandLine
+
+Never delete the relevant artifacts\revision_v2 subdirectory when stopping.
+On resume, each script checks its metadata:
+
+  - a completed model plus matching metadata is reused and skipped;
+  - an interrupted run with metadata but no model is retrained from its seed's
+    beginning;
+  - a saved model interrupted during its evaluation is loaded and evaluated
+    again, which is safe because evaluation uses fixed held-out trajectories.
+
+To continue later, reopen a visible terminal and repeat the same command for
+the campaign. For the active sensitivity campaign:
+
+    wt.exe new-tab --title "TN-NTN PPO Sensitivity CPU" powershell.exe -NoExit -ExecutionPolicy Bypass -File "D:\Projects\TN+NTN\tmp\run_sensitivity_cpu.ps1"
+
+Or, from an already-open terminal at D:\Projects\TN+NTN:
+
+    py -3.14 scripts\run_sensitivity_revision_v2.py --band all
+
+The same resume pattern applies to the core-training, evaluation, statistics,
+and geometry commands in the sections below.
+
 3. CORE TRAINING (RUN ONCE, OR SAFELY RESUME)
 ---------------------------------------------
 
