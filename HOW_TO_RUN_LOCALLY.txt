@@ -1,0 +1,159 @@
+TN-NTN REVISION-V2: LOCAL RUN GUIDE
+====================================
+
+This guide runs the reproducible revision-v2 study locally on Windows.
+The campaign is checkpointed: a completed model with matching metadata is
+reused; an incomplete seed is trained again from the beginning. Never delete
+artifacts/revision_v2 while a campaign is in progress.
+
+1. PREPARE THE REPOSITORY
+-------------------------
+
+Open PowerShell and run:
+
+    Set-Location -LiteralPath 'D:\Projects\TN+NTN'
+    git fetch origin --prune
+    git status --short --branch
+    py -3.14 -m pytest tests -q
+
+Use "pytest tests -q", not bare "pytest -q". The repository's tmp/vendor
+directory can contain external OpenNTN tests that require TensorFlow/Sionna;
+they are not this project's test suite.
+
+To update the active study branch:
+
+    git pull --ff-only origin gpu-benchmark-4x
+
+2. OPEN A VISIBLE WINDOWS TERMINAL
+----------------------------------
+
+The most reliable pattern is to create a small PowerShell launcher and invoke
+it with Windows Terminal. For example, this opens an interactive terminal at
+the repository root:
+
+    wt.exe new-tab --title "TN-NTN Study" powershell.exe -NoExit -Command "Set-Location -LiteralPath 'D:\Projects\TN+NTN'"
+
+Existing launcher files for the current workspace are under tmp/ and can be
+opened directly, for example:
+
+    wt.exe new-tab --title "TN-NTN PPO Sensitivity CPU" powershell.exe -NoExit -ExecutionPolicy Bypass -File "D:\Projects\TN+NTN\tmp\run_sensitivity_cpu.ps1"
+
+Do not close the Windows Terminal tab while its Python worker is active. Keep
+the computer awake, connected to power, and well ventilated.
+
+3. CORE TRAINING (RUN ONCE, OR SAFELY RESUME)
+---------------------------------------------
+
+Run each command in a visible terminal from D:\Projects\TN+NTN:
+
+    py -3.14 scripts\train_revision_v2.py --algorithm ppo --band all --device cpu
+    py -3.14 scripts\train_revision_v2.py --algorithm dqn --band all --device cpu
+    py -3.14 scripts\train_cql_revision_v2.py --band all
+
+Required outputs:
+
+    artifacts\revision_v2\core\{ku,ka,s}\{ppo,dqn}\seed_{0..9}\model.zip
+    artifacts\revision_v2\cql\{ku,ka,s}\seed_{0..9}\model.d3
+
+Do not switch an active CPU campaign to CUDA mid-study. CUDA can only be
+adopted after a separate matched benchmark proves the required 4x end-to-end
+speed-up.
+
+4. PAIRED FINAL EVALUATION
+--------------------------
+
+This tunes the hysteresis baseline on validation trajectories only, evaluates
+every policy on the 200 final-test trajectories, and stops if the oracle does
+not dominate.
+
+    py -3.14 scripts\evaluate_revision_v2.py
+
+Expected outputs:
+
+    artifacts\revision_v2\evaluation\hysteresis_validation_grid.csv
+    artifacts\revision_v2\evaluation\hysteresis_selected.json
+    artifacts\revision_v2\evaluation\paired_test_results.csv
+    artifacts\revision_v2\evaluation\seed_level_summary.csv
+
+5. SEED-AWARE STATISTICS
+------------------------
+
+    py -3.14 scripts\statistics_revision_v2.py
+
+This produces 10,000 hierarchical bootstrap replicates for each configured
+paired comparison and metric:
+
+    artifacts\revision_v2\evaluation\seed_aware_statistics.csv
+
+6. SENSITIVITY CAMPAIGN
+-----------------------
+
+The sensitivity campaign has 120 independent PPO runs:
+3 bands x 8 conditions x 5 seeds. Start or resume it with:
+
+    py -3.14 scripts\run_sensitivity_revision_v2.py --band all
+
+The eight conditions are lambda_0, lambda_0.05, lambda_0.15, lambda_0.3,
+lambda_0.5, objective_throughput, objective_latency, and
+objective_reliability. The fixed balanced objective is represented by the
+lambda conditions and is not duplicated.
+
+When all 120 runs finish, the script creates:
+
+    artifacts\revision_v2\sensitivity\paired_sensitivity_results.csv
+    artifacts\revision_v2\sensitivity\seed_level_sensitivity.csv
+
+Then create the Pareto export:
+
+    py -3.14 scripts\make_pareto_revision_v2.py
+
+7. GEOMETRY GENERALIZATION
+--------------------------
+
+Build the geometry suites if they are not present, then run the evaluation:
+
+    py -3.14 scripts\build_geometry_suites.py
+    py -3.14 scripts\evaluate_geometry_revision_v2.py
+
+Expected outputs:
+
+    artifacts\revision_v2\geometry\paired_geometry_results.csv
+    artifacts\revision_v2\geometry\geometry_difficulty.csv
+
+8. MANUSCRIPT AND RELEASE GATE
+------------------------------
+
+Only after all prior result files are frozen:
+
+    py -3.14 scripts\build_revision_manuscript.py
+    py -3.14 scripts\release_gate_revision_v2.py
+
+The final gate fails closed if checkpoints, statistics, sensitivity, geometry,
+physical-conformance, or manuscript outputs are missing.
+
+9. MONITORING COMMANDS
+----------------------
+
+Check active training/evaluation workers:
+
+    Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*revision_v2.py*' } | Select-Object ProcessId,ParentProcessId,Name,CommandLine | Format-List
+
+Count current sensitivity checkpoints:
+
+    (Get-ChildItem -LiteralPath 'artifacts\revision_v2\sensitivity' -Recurse -Filter model.zip -File -ErrorAction SilentlyContinue).Count
+
+Read the sensitivity terminal transcript:
+
+    Get-Content -LiteralPath 'artifacts\revision_v2\logs\sensitivity_cpu.log' -Tail 80
+
+Check disk space:
+
+    Get-PSDrive -Name D | Select-Object Name,Used,Free
+
+10. CURRENT CAMPAIGN STATUS (2026-09-21)
+-----------------------------------------
+
+Core PPO, DQN, CQL, paired final evaluation, and seed-aware statistics are
+complete. The CPU sensitivity campaign is active. Resume it with the command
+in section 6 if its terminal is interrupted; completed seed checkpoints are
+verified and skipped automatically.
