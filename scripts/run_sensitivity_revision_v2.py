@@ -38,13 +38,13 @@ def conditions(manifest):
 
 def train_and_evaluate(manifest, artifacts, band, condition_id, profile, penalty, seed):
     run_dir = artifacts / "sensitivity" / band / condition_id / f"seed_{seed}"
+    model_path = run_dir / "model.zip"
     metadata = checkpoint_metadata(
         manifest, phase="sensitivity", algorithm="ppo", band=band,
         condition=condition_id, reward_profile=profile,
         handover_penalty=penalty, train_seed=seed, result_path=str(model_path.relative_to(ROOT)),
     )
     reusable = validate_or_write_metadata(run_dir / "metadata.json", metadata)
-    model_path = run_dir / "model.zip"
     if model_path.exists():
         if not reusable:
             raise RuntimeError(f"unverified sweep checkpoint: {model_path}")

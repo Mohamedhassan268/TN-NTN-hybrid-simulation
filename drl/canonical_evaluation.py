@@ -86,33 +86,37 @@ def hierarchical_paired_bootstrap(
         raise ValueError("hierarchical inference requires at least two training seeds")
     trajectories = np.sort(subset["trajectory_id"].unique())
     lookup = subset.set_index(["policy", "train_seed", "trajectory_id"])[metric]
+
+    def policy_matrix(policy: str) -> np.ndarray:
+        """Return seed-by-trajectory values, broadcasting a shared baseline."""
+        values = np.empty((len(seeds), len(trajectories)), dtype=float)
+        for seed_index, train_seed in enumerate(seeds):
+            for trajectory_index, trajectory_id in enumerate(trajectories):
+                key = (policy, train_seed, trajectory_id)
+                baseline_key = (policy, -1, trajectory_id)
+                if key in lookup.index:
+                    values[seed_index, trajectory_index] = float(lookup.loc[key])
+                elif baseline_key in lookup.index:
+                    values[seed_index, trajectory_index] = float(lookup.loc[baseline_key])
+                else:
+                    raise KeyError(f"missing paired value for {key}")
+        return values
+
+    # A bootstrap replicate is the mean of every selected seed/trajectory pair.
+    # Keeping only draw counts yields the identical statistic while avoiding the
+    # previous Python-level loop over n_boot * seeds * trajectories.
+    differences = policy_matrix(policy_a) - policy_matrix(policy_b)
     rng = np.random.default_rng(seed)
-    estimates = np.empty(n_boot)
-    for index in range(n_boot):
-        sampled_seeds = rng.choice(seeds, len(seeds), replace=True)
-        sampled_trajectories = rng.choice(trajectories, len(trajectories), replace=True)
-        differences = []
-        for train_seed in sampled_seeds:
-            for trajectory_id in sampled_trajectories:
-                def value(policy):
-                    key = (policy, train_seed, trajectory_id)
-                    if key in lookup.index:
-                        return float(lookup.loc[key])
-                    baseline_key = (policy, -1, trajectory_id)
-                    return float(lookup.loc[baseline_key])
-                differences.append(value(policy_a) - value(policy_b))
-        estimates[index] = np.mean(differences)
-    observed = []
-    for train_seed in seeds:
-        a = subset[(subset.policy == policy_a) & (subset.train_seed == train_seed)]
-        if a.empty:
-            a = subset[(subset.policy == policy_a) & (subset.train_seed == -1)]
-        b = subset[(subset.policy == policy_b) & (subset.train_seed == train_seed)]
-        if b.empty:
-            b = subset[(subset.policy == policy_b) & (subset.train_seed == -1)]
-        paired = a.merge(b, on="trajectory_id", suffixes=("_a", "_b"))
-        observed.append(float((paired[f"{metric}_a"] - paired[f"{metric}_b"]).mean()))
-    observed = np.asarray(observed)
+    seed_draws = rng.integers(0, len(seeds), size=(n_boot, len(seeds)))
+    trajectory_draws = rng.integers(0, len(trajectories), size=(n_boot, len(trajectories)))
+    replicate_index = np.arange(n_boot)[:, None]
+    seed_counts = np.zeros((n_boot, len(seeds)), dtype=float)
+    trajectory_counts = np.zeros((n_boot, len(trajectories)), dtype=float)
+    np.add.at(seed_counts, (replicate_index, seed_draws), 1.0)
+    np.add.at(trajectory_counts, (replicate_index, trajectory_draws), 1.0)
+    estimates = ((seed_counts @ differences) * trajectory_counts).sum(axis=1)
+    estimates /= len(seeds) * len(trajectories)
+    observed = differences.mean(axis=1)
     standardizer = observed.std(ddof=1)
     effect_size = float(observed.mean() / standardizer) if standardizer > 0 else np.nan
     return {

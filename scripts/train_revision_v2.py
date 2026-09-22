@@ -15,6 +15,7 @@ from stable_baselines3.common.env_util import make_vec_env
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from drl.canonical_env import CanonicalNetworkSelectionEnv, CanonicalScenarioBank
+from drl.device import device_provenance, resolve_device
 from drl.experiment_manifest import checkpoint_metadata, load_manifest, validate_or_write_metadata
 from drl.reference_utility import PROFILES, load_reference_params
 
@@ -92,12 +93,13 @@ def verify_frozen_critic(manifest, output_root: Path) -> None:
             )
 
 
-def train_one(manifest, algorithm: str, band: str, seed: int, output_root: Path):
+def train_one(manifest, algorithm: str, band: str, seed: int, output_root: Path, device: str = "cpu"):
     dataset = ROOT / manifest["dataset_path"]
     params_path = ROOT / manifest["reference_params_path"]
     bank = CanonicalScenarioBank(dataset, "train", band)
     params = load_reference_params(params_path)
     core = manifest["core"]
+    resolved_device = resolve_device(device)
     if algorithm == "ppo":
         verify_frozen_critic(manifest, output_root)
     run_dir = output_root / "core" / band / algorithm / f"seed_{seed}"
@@ -106,6 +108,7 @@ def train_one(manifest, algorithm: str, band: str, seed: int, output_root: Path)
     metadata = checkpoint_metadata(
         manifest, phase="core", algorithm=algorithm, band=band, train_seed=seed,
         result_path=str(model_path.relative_to(ROOT)),
+        device=device_provenance(device, resolved_device),
     )
     reusable = validate_or_write_metadata(metadata_path, metadata)
     if model_path.exists():
@@ -119,7 +122,7 @@ def train_one(manifest, algorithm: str, band: str, seed: int, output_root: Path)
     if algorithm == "ppo":
         cfg = core["ppo"]
         model = PPO(
-            "MlpPolicy", vec_env, seed=seed, verbose=1,
+            "MlpPolicy", vec_env, seed=seed, verbose=1, device=resolved_device,
             learning_rate=cfg["learning_rate"], n_steps=cfg["n_steps"],
             batch_size=cfg["batch_size"], gamma=cfg["gamma"],
             gae_lambda=cfg["gae_lambda"], clip_range=cfg["clip_range"],
@@ -129,7 +132,7 @@ def train_one(manifest, algorithm: str, band: str, seed: int, output_root: Path)
     elif algorithm == "dqn":
         cfg = core["dqn"]
         model = DQN(
-            "MlpPolicy", vec_env, seed=seed, verbose=1,
+            "MlpPolicy", vec_env, seed=seed, verbose=1, device=resolved_device,
             learning_rate=cfg["learning_rate"], buffer_size=cfg["buffer_size"],
             learning_starts=cfg["learning_starts"], batch_size=cfg["batch_size"],
             train_freq=cfg["train_freq"], target_update_interval=cfg["target_update_interval"],
@@ -149,6 +152,7 @@ def parse_args():
     parser.add_argument("--band", choices=["ku", "ka", "s", "all"], default="all")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--output-root", type=Path, default=ARTIFACT_ROOT)
+    parser.add_argument("--device", choices=["cpu", "cuda", "auto"], default="cpu")
     return parser.parse_args()
 
 
@@ -161,4 +165,4 @@ if __name__ == "__main__":
     for band in bands:
         for algorithm in algorithms:
             for seed in seeds:
-                train_one(manifest, algorithm, band, seed, args.output_root)
+                train_one(manifest, algorithm, band, seed, args.output_root, args.device)
